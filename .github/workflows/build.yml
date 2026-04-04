@@ -15,12 +15,8 @@ jobs:
       uses: actions/checkout@v4
     
     - name: Build APK with Buildozer
-      uses: ArtemSBulgakov/buildozer-action@v1
-      id: buildozer
-      with:
-        workdir: .
-        target: android
-        buildozer_version: stable
+      run: |
+        docker run --rm -v "$PWD:/app" -w /app --entrypoint /bin/bash kivy/buildozer:latest -c "yes | buildozer android debug"
     
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
@@ -34,7 +30,7 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         files: bin/*.apk
-        name: ZBP压缩解压工具 v3.0
-        tag_name: v3.0.${{ github.run_number }}
+        name: ZBP压缩解压工具 v4.0
+        tag_name: v4.0.${{ github.run_number }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
