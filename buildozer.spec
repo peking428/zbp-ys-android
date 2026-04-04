@@ -7,7 +7,7 @@ package.domain = org.zbp
 source.dir = .
 source.include_exts = py,png,jpg,kv,atlas,json
 
-version = 4.1
+version = 5.0
 
 requirements = python3,kivy,pyzipper,plyer,android,pyjnius
 

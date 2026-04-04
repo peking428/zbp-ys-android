@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 """
 ZBP Compress/Decompress Tool - Android Version
-Version 4.1 - Uses Android system fonts only
+Version 5.0 - Robust error handling and font fallback
 """
 
 import os
 import sys
+import traceback
 
 from kivy.config import Config
 
@@ -15,7 +16,6 @@ Config.set('kivy', 'keyboard_mode', 'systemanddock')
 
 import zipfile
 import threading
-import traceback
 from datetime import datetime
 
 from kivy.app import App
@@ -69,6 +69,8 @@ if HAS_PYJNIUS:
         Logger.error(f'ZBP: Failed to load Android classes: {e}')
         HAS_PYJNIUS = False
 
+APP_FONT = None
+
 def find_system_font():
     system_font_paths = [
         '/system/fonts/NotoSansSC-Regular.otf',
@@ -84,50 +86,63 @@ def find_system_font():
     ]
     
     for font_path in system_font_paths:
-        if os.path.exists(font_path):
-            Logger.info(f'ZBP: Found system font: {font_path}')
-            return font_path
+        try:
+            if os.path.exists(font_path):
+                Logger.info(f'ZBP: Found system font: {font_path}')
+                return font_path
+        except Exception as e:
+            Logger.warning(f'ZBP: Error checking font {font_path}: {e}')
     
     return None
 
 def setup_font():
+    global APP_FONT
     Logger.info('ZBP: Setting up font system...')
     
-    font_path = None
-    
-    if hasattr(sys, 'android') or HAS_ANDROID:
-        Logger.info('ZBP: Running on Android, checking system fonts...')
-        font_path = find_system_font()
-    
-    if font_path:
-        try:
-            Logger.info(f'ZBP: Registering font: {font_path}')
-            LabelBase.register(name='AppFont', fn_regular=font_path)
-            Config.set('kivy', 'default_font', 'AppFont')
-            Logger.info(f'ZBP: Font registered successfully: {font_path}')
-            return 'AppFont'
-        except Exception as e:
-            Logger.error(f'ZBP: Failed to register font: {e}')
-            import traceback
-            Logger.error(traceback.format_exc())
-    
-    Logger.warning('ZBP: Using default font')
-    return DEFAULT_FONT
-
-APP_FONT = setup_font()
+    try:
+        font_path = None
+        
+        if hasattr(sys, 'android') or HAS_ANDROID:
+            Logger.info('ZBP: Running on Android, checking system fonts...')
+            font_path = find_system_font()
+        
+        if font_path:
+            try:
+                Logger.info(f'ZBP: Registering font: {font_path}')
+                LabelBase.register(name='AppFont', fn_regular=font_path)
+                Config.set('kivy', 'default_font', 'AppFont')
+                APP_FONT = 'AppFont'
+                Logger.info(f'ZBP: Font registered successfully: {font_path}')
+                return 'AppFont'
+            except Exception as e:
+                Logger.error(f'ZBP: Failed to register font: {e}')
+                Logger.error(traceback.format_exc())
+        
+        Logger.warning('ZBP: Using default font')
+        APP_FONT = DEFAULT_FONT
+        return DEFAULT_FONT
+        
+    except Exception as e:
+        Logger.error(f'ZBP: Font setup error: {e}')
+        Logger.error(traceback.format_exc())
+        APP_FONT = DEFAULT_FONT
+        return DEFAULT_FONT
 
 def get_font():
-    if APP_FONT and APP_FONT != DEFAULT_FONT:
+    global APP_FONT
+    if APP_FONT:
         return APP_FONT
     return 'Roboto'
 
 class ZbpYsApp(App):
     def build(self):
         try:
-            Logger.info('ZBP: Starting application build v4.1')
+            Logger.info('ZBP: Starting application build v5.0')
             self.title = "ZBP Tool"
             
             Window.clearcolor = (0.95, 0.95, 0.95, 1)
+            
+            setup_font()
             
             self.base_path = self.get_storage_path()
             Logger.info(f'ZBP: Storage path: {self.base_path}')
@@ -915,8 +930,7 @@ class ZbpYsApp(App):
 
 if __name__ == '__main__':
     try:
-        Logger.info('ZBP: Application starting v4.1')
-        Logger.info(f'ZBP: Font in use: {get_font()}')
+        Logger.info('ZBP: Application starting v5.0')
         ZbpYsApp().run()
     except Exception as e:
         Logger.error(f'ZBP: Fatal error: {e}')
