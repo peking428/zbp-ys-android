@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 ZBP Compress/Decompress Tool - Android Version
-Version 4.0 - Complete font system rewrite
+Version 4.1 - Uses Android system fonts only
 """
 
 import os
@@ -30,7 +30,6 @@ from kivy.uix.progressbar import ProgressBar
 from kivy.clock import Clock
 from kivy.metrics import dp
 from kivy.logger import Logger
-from kivy.resources import resource_add_path
 from kivy.core.text import LabelBase, DEFAULT_FONT
 from kivy.core.window import Window
 
@@ -70,17 +69,6 @@ if HAS_PYJNIUS:
         Logger.error(f'ZBP: Failed to load Android classes: {e}')
         HAS_PYJNIUS = False
 
-def get_app_dir():
-    if hasattr(sys, '_MEIPASS'):
-        return sys._MEIPASS
-    if hasattr(sys, 'android'):
-        try:
-            from android.storage import primary_external_storage_path
-            return primary_external_storage_path()
-        except:
-            pass
-    return os.path.dirname(os.path.abspath(__file__))
-
 def find_system_font():
     system_font_paths = [
         '/system/fonts/NotoSansSC-Regular.otf',
@@ -92,33 +80,12 @@ def find_system_font():
         '/system/fonts/NotoSans-Regular.ttf',
         '/system/fonts/HarmonyOS-Sans-Regular.ttf',
         '/system/fonts/HmosFont-Regular.ttf',
+        '/system/fonts/SourceHanSansSC-Regular.otf',
     ]
     
     for font_path in system_font_paths:
         if os.path.exists(font_path):
             Logger.info(f'ZBP: Found system font: {font_path}')
-            return font_path
-    
-    return None
-
-def find_bundled_font():
-    app_dir = get_app_dir()
-    Logger.info(f'ZBP: App directory: {app_dir}')
-    
-    bundled_font_paths = [
-        os.path.join(app_dir, 'fonts', 'NotoSansSC-Regular.otf'),
-        os.path.join(app_dir, 'NotoSansSC-Regular.otf'),
-        os.path.join(app_dir, 'fonts', 'NotoSansCJKsc.otf'),
-        os.path.join(app_dir, 'NotoSansCJKsc.otf'),
-        'fonts/NotoSansSC-Regular.otf',
-        'NotoSansSC-Regular.otf',
-        'fonts/NotoSansCJKsc.otf',
-        'NotoSansCJKsc.otf',
-    ]
-    
-    for font_path in bundled_font_paths:
-        if os.path.exists(font_path):
-            Logger.info(f'ZBP: Found bundled font: {font_path}')
             return font_path
     
     return None
@@ -131,10 +98,6 @@ def setup_font():
     if hasattr(sys, 'android') or HAS_ANDROID:
         Logger.info('ZBP: Running on Android, checking system fonts...')
         font_path = find_system_font()
-    
-    if not font_path:
-        Logger.info('ZBP: Checking bundled fonts...')
-        font_path = find_bundled_font()
     
     if font_path:
         try:
@@ -161,7 +124,7 @@ def get_font():
 class ZbpYsApp(App):
     def build(self):
         try:
-            Logger.info('ZBP: Starting application build v4.0')
+            Logger.info('ZBP: Starting application build v4.1')
             self.title = "ZBP Tool"
             
             Window.clearcolor = (0.95, 0.95, 0.95, 1)
@@ -952,7 +915,7 @@ class ZbpYsApp(App):
 
 if __name__ == '__main__':
     try:
-        Logger.info('ZBP: Application starting v4.0')
+        Logger.info('ZBP: Application starting v4.1')
         Logger.info(f'ZBP: Font in use: {get_font()}')
         ZbpYsApp().run()
     except Exception as e:
