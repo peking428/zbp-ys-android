@@ -5,9 +5,9 @@ package.name = zbpys
 package.domain = org.zbp
 
 source.dir = .
-source.include_exts = py,png,jpg,kv,atlas,json,otf,ttf
+source.include_exts = py,png,jpg,kv,atlas,json
 
-version = 4.0
+version = 4.1
 
 requirements = python3,kivy,pyzipper,plyer,android,pyjnius
 
