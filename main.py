@@ -13,6 +13,7 @@ from kivy.config import Config
 Config.set('graphics', 'width', '360')
 Config.set('graphics', 'height', '640')
 Config.set('kivy', 'keyboard_mode', 'systemanddock')
+Config.set('kivy', 'default_font', ['Roboto', 'DroidSans', 'sans-serif'])
 
 import zipfile
 import threading
@@ -75,15 +76,27 @@ APP_FONT = None
 def find_system_font():
     system_font_paths = [
         '/system/fonts/NotoSansSC-Regular.otf',
+        '/system/fonts/NotoSansSC-Regular.ttf',
         '/system/fonts/NotoSansCJK-Regular.otf',
+        '/system/fonts/NotoSansCJK-Regular.ttf',
         '/system/fonts/NotoSansCJKsc-Regular.otf',
+        '/system/fonts/NotoSansCJKsc-Regular.ttf',
         '/system/fonts/DroidSansFallback.ttf',
+        '/system/fonts/DroidSansFallbackFull.ttf',
         '/system/fonts/DroidSans.ttf',
         '/system/fonts/Roboto-Regular.ttf',
         '/system/fonts/NotoSans-Regular.ttf',
         '/system/fonts/HarmonyOS-Sans-Regular.ttf',
+        '/system/fonts/HarmonyOS_Sans_SC_Regular.ttf',
         '/system/fonts/HmosFont-Regular.ttf',
         '/system/fonts/SourceHanSansSC-Regular.otf',
+        '/system/fonts/SourceHanSansSC-Regular.ttf',
+        '/system/fonts/SourceHanSansCN-Regular.otf',
+        '/system/fonts/SourceHanSansCN-Regular.ttf',
+        '/system/fonts/GoogleSans-Regular.ttf',
+        '/system/fonts/GoogleSans-Regular.otf',
+        '/system/fonts/MiSans-Regular.ttf',
+        '/system/fonts/MiSans-Regular.otf',
     ]
     
     for font_path in system_font_paths:
@@ -111,7 +124,7 @@ def setup_font():
             try:
                 Logger.info(f'ZBP: Registering font: {font_path}')
                 LabelBase.register(name='AppFont', fn_regular=font_path)
-                Config.set('kivy', 'default_font', 'AppFont')
+                Config.set('kivy', 'default_font', ['AppFont', 'Roboto', 'DroidSans', 'sans-serif'])
                 APP_FONT = 'AppFont'
                 Logger.info(f'ZBP: Font registered successfully: {font_path}')
                 return 'AppFont'
@@ -119,7 +132,8 @@ def setup_font():
                 Logger.error(f'ZBP: Failed to register font: {e}')
                 Logger.error(traceback.format_exc())
         
-        Logger.warning('ZBP: Using default font')
+        Logger.warning('ZBP: Using default font fallback')
+        Config.set('kivy', 'default_font', ['Roboto', 'DroidSans', 'sans-serif'])
         APP_FONT = DEFAULT_FONT
         return DEFAULT_FONT
         
