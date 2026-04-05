@@ -18,6 +18,7 @@ import zipfile
 import threading
 from datetime import datetime
 
+from kivy.graphics import Color, RoundedRectangle
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
@@ -182,30 +183,32 @@ class ZbpYsApp(App):
             )
             self.root_layout.add_widget(subtitle_label)
             
-            mode_layout = BoxLayout(size_hint_y=None, height=dp(55), spacing=dp(8), padding=dp(5))
+            mode_layout = BoxLayout(size_hint_y=None, height=dp(60), spacing=dp(10), padding=dp(5))
 
             self.compress_btn = ToggleButton(
-                text='[b]📁 压缩[/b]',
+                text='[b]📁 压缩模式[/b]',
                 group='mode',
                 state='down',
-                font_size='16sp',
+                font_size='18sp',
                 background_color=(0.2, 0.6, 0.9, 1),
+                color=(1, 1, 1, 1),
                 font_name=font_name,
                 markup=True,
-                border=(2, 2, 2, 2)
+                border=(4, 4, 4, 4)
             )
             self.compress_btn.bind(on_press=lambda x: self.switch_mode('compress'))
             mode_layout.add_widget(self.compress_btn)
 
             self.decompress_btn = ToggleButton(
-                text='[b]📂 解压[/b]',
+                text='[b]📂 解压模式[/b]',
                 group='mode',
                 state='normal',
-                font_size='16sp',
-                background_color=(0.7, 0.7, 0.7, 1),
+                font_size='18sp',
+                background_color=(0.9, 0.5, 0.2, 0.3),
+                color=(0.3, 0.3, 0.3, 1),
                 font_name=font_name,
                 markup=True,
-                border=(2, 2, 2, 2)
+                border=(4, 4, 4, 4)
             )
             self.decompress_btn.bind(on_press=lambda x: self.switch_mode('decompress'))
             mode_layout.add_widget(self.decompress_btn)
@@ -215,7 +218,6 @@ class ZbpYsApp(App):
             self.compress_layout = self.create_compress_layout(font_name)
             self.decompress_layout = self.create_decompress_layout(font_name)
             self.root_layout.add_widget(self.compress_layout)
-            self.root_layout.add_widget(self.decompress_layout)
             
             self.progress_bar = ProgressBar(
                 size_hint_y=None,
@@ -529,24 +531,24 @@ class ZbpYsApp(App):
             self.compress_btn.state = 'down'
             self.compress_btn.background_color = (0.2, 0.6, 0.9, 1)
             self.decompress_btn.state = 'normal'
-            self.decompress_btn.background_color = (0.5, 0.5, 0.5, 1)
-            self.compress_layout.opacity = 1
-            self.compress_layout.disabled = False
-            self.decompress_layout.opacity = 0
-            self.decompress_layout.disabled = True
-            self.action_btn.text = '[b]开始压缩[/b]'
+            self.decompress_btn.background_color = (0.7, 0.7, 0.7, 1)
+            if self.decompress_layout in self.root_layout.children:
+                self.root_layout.remove_widget(self.decompress_layout)
+            if self.compress_layout not in self.root_layout.children:
+                self.root_layout.add_widget(self.compress_layout, index=len(self.root_layout.children) - 4)
+            self.action_btn.text = '[b]🚀 开始压缩[/b]'
             self.action_btn.background_color = (0.2, 0.7, 0.3, 1)
             self.status_label.text = 'Ready - Select files to compress'
         else:
             self.decompress_btn.state = 'down'
             self.decompress_btn.background_color = (0.9, 0.5, 0.2, 1)
             self.compress_btn.state = 'normal'
-            self.compress_btn.background_color = (0.5, 0.5, 0.5, 1)
-            self.decompress_layout.opacity = 1
-            self.decompress_layout.disabled = False
-            self.compress_layout.opacity = 0
-            self.compress_layout.disabled = True
-            self.action_btn.text = '[b]开始解压[/b]'
+            self.compress_btn.background_color = (0.7, 0.7, 0.7, 1)
+            if self.compress_layout in self.root_layout.children:
+                self.root_layout.remove_widget(self.compress_layout)
+            if self.decompress_layout not in self.root_layout.children:
+                self.root_layout.add_widget(self.decompress_layout, index=len(self.root_layout.children) - 4)
+            self.action_btn.text = '[b]🚀 开始解压[/b]'
             self.action_btn.background_color = (0.9, 0.5, 0.2, 1)
             self.status_label.text = 'Ready - Select ZIP file to decompress'
         self.progress_bar.value = 0
