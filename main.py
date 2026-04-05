@@ -13,7 +13,6 @@ from kivy.config import Config
 Config.set('graphics', 'width', '360')
 Config.set('graphics', 'height', '640')
 Config.set('kivy', 'keyboard_mode', 'systemanddock')
-Config.set('kivy', 'default_font', ['Roboto', 'DroidSans', 'sans-serif'])
 
 import zipfile
 import threading
@@ -124,7 +123,7 @@ def setup_font():
             try:
                 Logger.info(f'ZBP: Registering font: {font_path}')
                 LabelBase.register(name='AppFont', fn_regular=font_path)
-                Config.set('kivy', 'default_font', ['AppFont', 'Roboto', 'DroidSans', 'sans-serif'])
+                Config.set('kivy', 'default_font', 'AppFont')
                 APP_FONT = 'AppFont'
                 Logger.info(f'ZBP: Font registered successfully: {font_path}')
                 return 'AppFont'
@@ -133,7 +132,6 @@ def setup_font():
                 Logger.error(traceback.format_exc())
         
         Logger.warning('ZBP: Using default font fallback')
-        Config.set('kivy', 'default_font', ['Roboto', 'DroidSans', 'sans-serif'])
         APP_FONT = DEFAULT_FONT
         return DEFAULT_FONT
         
