@@ -182,38 +182,39 @@ class ZbpYsApp(App):
             )
             self.root_layout.add_widget(subtitle_label)
             
-            mode_layout = BoxLayout(size_hint_y=None, height=dp(45), spacing=dp(10))
-            
+            mode_layout = BoxLayout(size_hint_y=None, height=dp(55), spacing=dp(8), padding=dp(5))
+
             self.compress_btn = ToggleButton(
-                text='Compress',
+                text='[b]📁 压缩[/b]',
                 group='mode',
                 state='down',
-                font_size='15sp',
+                font_size='16sp',
                 background_color=(0.2, 0.6, 0.9, 1),
-                font_name=font_name
+                font_name=font_name,
+                markup=True,
+                border=(2, 2, 2, 2)
             )
             self.compress_btn.bind(on_press=lambda x: self.switch_mode('compress'))
             mode_layout.add_widget(self.compress_btn)
-            
+
             self.decompress_btn = ToggleButton(
-                text='Decompress',
+                text='[b]📂 解压[/b]',
                 group='mode',
                 state='normal',
-                font_size='15sp',
-                background_color=(0.9, 0.5, 0.2, 1),
-                font_name=font_name
+                font_size='16sp',
+                background_color=(0.7, 0.7, 0.7, 1),
+                font_name=font_name,
+                markup=True,
+                border=(2, 2, 2, 2)
             )
             self.decompress_btn.bind(on_press=lambda x: self.switch_mode('decompress'))
             mode_layout.add_widget(self.decompress_btn)
-            
+
             self.root_layout.add_widget(mode_layout)
-            
+
             self.compress_layout = self.create_compress_layout(font_name)
-            self.root_layout.add_widget(self.compress_layout)
-            
             self.decompress_layout = self.create_decompress_layout(font_name)
-            self.decompress_layout.opacity = 0
-            self.decompress_layout.disabled = True
+            self.root_layout.add_widget(self.compress_layout)
             self.root_layout.add_widget(self.decompress_layout)
             
             self.progress_bar = ProgressBar(
@@ -235,18 +236,18 @@ class ZbpYsApp(App):
             self.status_label.bind(texture_size=self.status_label.setter('size'))
             self.root_layout.add_widget(self.status_label)
             
-            action_layout = BoxLayout(size_hint_y=None, height=dp(50), spacing=dp(10))
-            
+            action_layout = BoxLayout(size_hint_y=None, height=dp(60), spacing=dp(10), padding=dp(5))
+
             self.action_btn = Button(
-                text='START COMPRESS',
-                font_size='16sp',
-                background_color=(0.1, 0.7, 0.3, 1),
+                text='[b]🚀 开始压缩[/b]',
+                font_size='18sp',
+                background_color=(0.2, 0.7, 0.3, 1),
                 font_name=font_name,
-                bold=True
+                markup=True
             )
             self.action_btn.bind(on_press=self.start_action)
             action_layout.add_widget(self.action_btn)
-            
+
             self.root_layout.add_widget(action_layout)
             
             Logger.info('ZBP: Application build completed successfully')
@@ -299,93 +300,109 @@ class ZbpYsApp(App):
             Logger.error(f'ZBP: Error requesting permissions: {e}')
     
     def create_compress_layout(self, font_name):
-        layout = BoxLayout(orientation='vertical', spacing=dp(5))
-        
-        file_btn_layout = BoxLayout(size_hint_y=None, height=dp(45), spacing=dp(5))
-        
+        layout = BoxLayout(orientation='vertical', spacing=dp(8), padding=dp(10))
+
+        card_bg = BoxLayout(orientation='vertical', spacing=dp(5), padding=dp(10))
+        try:
+            card_bg.canvas.before.add(Color(0.95, 0.95, 0.98, 1))
+            card_bg.canvas.before.add(RoundedRectangle(pos=card_bg.pos, size=card_bg.size, radius=[dp(10), dp(10), dp(10), dp(10)]))
+        except:
+            pass
+
+        file_btn_layout = BoxLayout(size_hint_y=None, height=dp(50), spacing=dp(8))
+
         select_file_btn = Button(
-            text='Select Files',
-            font_size='14sp',
+            text='[b]📂 选择文件[/b]',
+            font_size='15sp',
             size_hint_x=0.5,
-            background_color=(0.3, 0.5, 0.8, 1),
-            font_name=font_name
+            background_color=(0.25, 0.55, 0.85, 1),
+            font_name=font_name,
+            markup=True
         )
         select_file_btn.bind(on_press=self.select_files)
         file_btn_layout.add_widget(select_file_btn)
-        
+
         select_folder_btn = Button(
-            text='Select Folder',
-            font_size='14sp',
+            text='[b]📁 选择文件夹[/b]',
+            font_size='15sp',
             size_hint_x=0.5,
-            background_color=(0.3, 0.5, 0.8, 1),
-            font_name=font_name
+            background_color=(0.25, 0.55, 0.85, 1),
+            font_name=font_name,
+            markup=True
         )
         select_folder_btn.bind(on_press=self.select_folder)
         file_btn_layout.add_widget(select_folder_btn)
-        
-        layout.add_widget(file_btn_layout)
-        
+
+        card_bg.add_widget(file_btn_layout)
+
         self.file_list_label = Label(
-            text='Selected: 0 files',
-            font_size='12sp',
-            size_hint_y=None,
-            height=dp(70),
+            text='未选择任何文件',
+            font_size='13sp',
+            size_hint_y=1,
             halign='left',
             valign='top',
             text_size=(None, None),
-            color=(0.2, 0.2, 0.2, 1),
+            color=(0.3, 0.3, 0.3, 1),
             font_name=font_name
         )
-        self.file_list_label.bind(texture_size=self.file_list_label.setter('size'))
-        layout.add_widget(self.file_list_label)
-        
+        card_bg.add_widget(self.file_list_label)
+
         clear_btn = Button(
-            text='Clear Selection',
-            font_size='13sp',
+            text='[b]🗑️ 清除选择[/b]',
+            font_size='14sp',
             size_hint_y=None,
-            height=dp(35),
-            background_color=(0.8, 0.3, 0.3, 1),
-            font_name=font_name
+            height=dp(40),
+            background_color=(0.85, 0.35, 0.35, 1),
+            font_name=font_name,
+            markup=True
         )
         clear_btn.bind(on_press=self.clear_list)
-        layout.add_widget(clear_btn)
+        card_bg.add_widget(clear_btn)
+
+        layout.add_widget(card_bg)
         
         name_layout = BoxLayout(size_hint_y=None, height=dp(45))
         name_layout.add_widget(Label(
-            text='ZIP Name:', 
-            font_size='14sp', 
-            size_hint_x=0.35, 
+            text='ZIP名称:',
+            font_size='14sp',
+            size_hint_x=0.3,
             font_name=font_name,
             color=(0.2, 0.2, 0.2, 1)
         ))
         self.zip_name_input = TextInput(
             text=f'compressed_{datetime.now().strftime("%Y%m%d_%H%M%S")}',
             font_size='14sp',
-            size_hint_x=0.65
+            size_hint_x=0.7
         )
         name_layout.add_widget(self.zip_name_input)
         layout.add_widget(name_layout)
-        
-        pwd_section = BoxLayout(orientation='vertical', size_hint_y=None, height=dp(130), spacing=dp(5))
-        
-        pwd_header = BoxLayout(size_hint_y=None, height=dp(30))
-        self.use_password_cb = CheckBox(size_hint_x=0.1, active=False)
+
+        pwd_card = BoxLayout(orientation='vertical', size_hint_y=None, height=dp(140), spacing=dp(5), padding=dp(5))
+        try:
+            pwd_card.canvas.before.add(Color(0.97, 0.97, 1.0, 1))
+            pwd_card.canvas.before.add(RoundedRectangle(pos=pwd_card.pos, size=pwd_card.size, radius=[dp(8), dp(8), dp(8), dp(8)]))
+        except:
+            pass
+
+        pwd_header = BoxLayout(size_hint_y=None, height=dp(35))
+        self.use_password_cb = CheckBox(size_hint_x=0.15, active=False)
         self.use_password_cb.bind(on_active=self.toggle_password)
         pwd_header.add_widget(self.use_password_cb)
         pwd_header.add_widget(Label(
-            text='Enable Password Protection', 
-            font_size='13sp', 
-            size_hint_x=0.9, 
+            text='[b]🔒 启用密码保护[/b]',
+            font_size='14sp',
+            size_hint_x=0.85,
             font_name=font_name,
+            markup=True,
             color=(0.2, 0.2, 0.2, 1)
         ))
-        pwd_section.add_widget(pwd_header)
-        
-        pwd_layout = BoxLayout(size_hint_y=None, height=dp(40))
+        pwd_card.add_widget(pwd_header)
+
+        pwd_layout = BoxLayout(size_hint_y=None, height=dp(45))
         pwd_layout.add_widget(Label(
-            text='Password:', 
-            font_size='13sp', 
-            size_hint_x=0.25, 
+            text='密码:',
+            font_size='13sp',
+            size_hint_x=0.25,
             font_name=font_name,
             color=(0.2, 0.2, 0.2, 1)
         ))
@@ -397,9 +414,9 @@ class ZbpYsApp(App):
         )
         pwd_layout.add_widget(self.compress_pwd_input)
         pwd_layout.add_widget(Label(
-            text='Confirm:', 
-            font_size='13sp', 
-            size_hint_x=0.15, 
+            text='确认:',
+            font_size='13sp',
+            size_hint_x=0.15,
             font_name=font_name,
             color=(0.2, 0.2, 0.2, 1)
         ))
@@ -410,67 +427,75 @@ class ZbpYsApp(App):
             disabled=True
         )
         pwd_layout.add_widget(self.compress_pwd_confirm)
-        pwd_section.add_widget(pwd_layout)
-        
-        show_pwd_layout = BoxLayout(size_hint_y=None, height=dp(25))
-        self.show_pwd_cb = CheckBox(size_hint_x=0.1, active=False, disabled=True)
+        pwd_card.add_widget(pwd_layout)
+
+        show_pwd_layout = BoxLayout(size_hint_y=None, height=dp(30))
+        self.show_pwd_cb = CheckBox(size_hint_x=0.15, active=False, disabled=True)
         self.show_pwd_cb.bind(on_active=self.toggle_show_password)
         show_pwd_layout.add_widget(self.show_pwd_cb)
         show_pwd_layout.add_widget(Label(
-            text='Show Password', 
-            font_size='11sp', 
-            size_hint_x=0.9, 
+            text='显示密码',
+            font_size='12sp',
+            size_hint_x=0.85,
             font_name=font_name,
             color=(0.3, 0.3, 0.3, 1)
         ))
-        pwd_section.add_widget(show_pwd_layout)
-        
-        layout.add_widget(pwd_section)
-        
+        pwd_card.add_widget(show_pwd_layout)
+
+        layout.add_widget(pwd_card)
+
         return layout
     
     def create_decompress_layout(self, font_name):
-        layout = BoxLayout(orientation='vertical', spacing=dp(5))
-        
-        zip_btn_layout = BoxLayout(size_hint_y=None, height=dp(45))
+        layout = BoxLayout(orientation='vertical', spacing=dp(8), padding=dp(10))
+
+        card_bg = BoxLayout(orientation='vertical', spacing=dp(5), padding=dp(10))
+        try:
+            card_bg.canvas.before.add(Color(0.98, 0.95, 0.93, 1))
+            card_bg.canvas.before.add(RoundedRectangle(pos=card_bg.pos, size=card_bg.size, radius=[dp(10), dp(10), dp(10), dp(10)]))
+        except:
+            pass
+
+        zip_btn_layout = BoxLayout(size_hint_y=None, height=dp(50))
         select_zip_btn = Button(
-            text='Select ZIP File',
-            font_size='14sp',
+            text='[b]📂 选择ZIP文件[/b]',
+            font_size='15sp',
             size_hint_x=1,
             background_color=(0.9, 0.5, 0.2, 1),
-            font_name=font_name
+            font_name=font_name,
+            markup=True
         )
         select_zip_btn.bind(on_press=self.select_zip_file)
         zip_btn_layout.add_widget(select_zip_btn)
-        layout.add_widget(zip_btn_layout)
-        
+        card_bg.add_widget(zip_btn_layout)
+
         self.zip_path_label = Label(
-            text='No file selected',
-            font_size='12sp',
+            text='未选择任何文件',
+            font_size='13sp',
             size_hint_y=None,
-            height=dp(35),
+            height=dp(40),
             halign='center',
             color=(0.3, 0.3, 0.3, 1),
             font_name=font_name
         )
-        layout.add_widget(self.zip_path_label)
-        
+        card_bg.add_widget(self.zip_path_label)
+
         self.zip_info_label = Label(
-            text='ZIP Info: --',
-            font_size='11sp',
+            text='ZIP信息: --',
+            font_size='12sp',
             size_hint_y=None,
             height=dp(50),
             halign='center',
             color=(0.3, 0.3, 0.3, 1),
             font_name=font_name
         )
-        layout.add_widget(self.zip_info_label)
-        
-        pwd_layout = BoxLayout(size_hint_y=None, height=dp(45))
+        card_bg.add_widget(self.zip_info_label)
+
+        pwd_layout = BoxLayout(size_hint_y=None, height=dp(50))
         pwd_layout.add_widget(Label(
-            text='Password:', 
-            font_size='14sp', 
-            size_hint_x=0.3, 
+            text='密码:',
+            font_size='14sp',
+            size_hint_x=0.25,
             font_name=font_name,
             color=(0.2, 0.2, 0.2, 1)
         ))
@@ -478,42 +503,50 @@ class ZbpYsApp(App):
             password=True,
             font_size='14sp',
             size_hint_x=0.5,
-            hint_text='(Optional)'
+            hint_text='(可选)'
         )
         pwd_layout.add_widget(self.decompress_pwd_input)
-        
+
         self.show_decompress_pwd_cb = CheckBox(size_hint_x=0.1, active=False)
         self.show_decompress_pwd_cb.bind(on_active=self.toggle_show_decompress_password)
         pwd_layout.add_widget(self.show_decompress_pwd_cb)
         pwd_layout.add_widget(Label(
-            text='Show', 
-            font_size='11sp', 
-            size_hint_x=0.1, 
+            text='显示',
+            font_size='12sp',
+            size_hint_x=0.15,
             font_name=font_name,
             color=(0.3, 0.3, 0.3, 1)
         ))
-        layout.add_widget(pwd_layout)
-        
+        card_bg.add_widget(pwd_layout)
+
+        layout.add_widget(card_bg)
+
         return layout
     
     def switch_mode(self, mode):
         self.current_mode = mode
-        font_name = get_font()
-        
         if mode == 'compress':
+            self.compress_btn.state = 'down'
+            self.compress_btn.background_color = (0.2, 0.6, 0.9, 1)
+            self.decompress_btn.state = 'normal'
+            self.decompress_btn.background_color = (0.5, 0.5, 0.5, 1)
             self.compress_layout.opacity = 1
             self.compress_layout.disabled = False
             self.decompress_layout.opacity = 0
             self.decompress_layout.disabled = True
-            self.action_btn.text = 'START COMPRESS'
-            self.action_btn.background_color = (0.1, 0.7, 0.3, 1)
+            self.action_btn.text = '[b]开始压缩[/b]'
+            self.action_btn.background_color = (0.2, 0.7, 0.3, 1)
             self.status_label.text = 'Ready - Select files to compress'
         else:
-            self.compress_layout.opacity = 0
-            self.compress_layout.disabled = True
+            self.decompress_btn.state = 'down'
+            self.decompress_btn.background_color = (0.9, 0.5, 0.2, 1)
+            self.compress_btn.state = 'normal'
+            self.compress_btn.background_color = (0.5, 0.5, 0.5, 1)
             self.decompress_layout.opacity = 1
             self.decompress_layout.disabled = False
-            self.action_btn.text = 'START DECOMPRESS'
+            self.compress_layout.opacity = 0
+            self.compress_layout.disabled = True
+            self.action_btn.text = '[b]开始解压[/b]'
             self.action_btn.background_color = (0.9, 0.5, 0.2, 1)
             self.status_label.text = 'Ready - Select ZIP file to decompress'
         self.progress_bar.value = 0
@@ -681,12 +714,17 @@ class ZbpYsApp(App):
     
     def update_file_list(self):
         count = len(self.selected_files)
-        self.file_list_label.text = f'Selected: {count} files/folders\n' + '\n'.join(
-            [os.path.basename(f.replace('[Folder] ', '')) for f in self.selected_files[:5]]
-        )
-        if count > 5:
-            self.file_list_label.text += f'\n... and {count-5} more'
-    
+        if count == 0:
+            self.file_list_label.text = '未选择任何文件'
+            return
+        lines = []
+        for f in self.selected_files:
+            clean_path = f.replace('[Folder] ', '')
+            lines.append(clean_path)
+        self.file_list_label.text = f'已选择 {count} 个文件/文件夹:\n\n' + '\n'.join(lines)
+        if count > 10:
+            self.file_list_label.text += f'\n\n... 还有 {count - 10} 个文件'
+
     def update_zip_info(self):
         try:
             if self.zip_path and os.path.exists(self.zip_path):
@@ -694,15 +732,15 @@ class ZbpYsApp(App):
                     file_count = len(zf.namelist())
                     total_size = sum(info.file_size for info in zf.infolist())
                     is_encrypted = any(info.flag_bits & 0x1 for info in zf.infolist())
-                    enc_text = ' [Encrypted]' if is_encrypted else ''
-                    self.zip_info_label.text = f'Files: {file_count} | Size: {self.format_size(total_size)}{enc_text}'
+                    enc_text = ' [已加密]' if is_encrypted else ''
+                    self.zip_info_label.text = f'文件数: {file_count} | 大小: {self.format_size(total_size)}{enc_text}'
         except Exception as e:
             Logger.error(f'ZBP: update_zip_info error: {e}')
-            self.zip_info_label.text = 'Cannot read file info'
-    
+            self.zip_info_label.text = '无法读取文件信息'
+
     def clear_list(self, instance):
         self.selected_files.clear()
-        self.file_list_label.text = 'Selected: 0 files'
+        self.file_list_label.text = '未选择任何文件'
     
     def start_action(self, instance):
         if self.is_processing:
