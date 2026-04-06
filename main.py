@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 ZBP Compress/Decompress Tool - Android Version
-Version 5.7 - Complete Rewrite, Stable English Version
+Version 5.8 - Stable Version with Simple File Selection
 """
 
 import os
@@ -70,7 +70,7 @@ if HAS_PYJNIUS:
 class ZbpYsApp(App):
     def build(self):
         try:
-            Logger.info('ZBP: Starting application build v5.7')
+            Logger.info('ZBP: Starting application build v5.8')
             self.title = "ZBP Tool"
             
             Window.clearcolor = (0.95, 0.95, 0.95, 1)
@@ -119,7 +119,7 @@ class ZbpYsApp(App):
                 color=(1, 1, 1, 1),
                 markup=True
             )
-            self.compress_btn.bind(on_press=lambda x: self.switch_mode('compress'))
+            self.compress_btn.bind(on_press=self.switch_mode)
             mode_layout.add_widget(self.compress_btn)
 
             self.decompress_btn = ToggleButton(
@@ -131,7 +131,7 @@ class ZbpYsApp(App):
                 color=(0.3, 0.3, 0.3, 1),
                 markup=True
             )
-            self.decompress_btn.bind(on_press=lambda x: self.switch_mode('decompress'))
+            self.decompress_btn.bind(on_press=self.switch_mode)
             mode_layout.add_widget(self.decompress_btn)
 
             self.root_layout.add_widget(mode_layout)
@@ -226,23 +226,23 @@ class ZbpYsApp(App):
         file_btn_layout = BoxLayout(size_hint_y=None, height=dp(50), spacing=dp(8))
 
         select_file_btn = Button(
-            text='[b]Select Files[/b]',
+            text='[b]Add Test File[/b]',
             font_size='15sp',
             size_hint_x=0.5,
             background_color=(0.25, 0.55, 0.85, 1),
             markup=True
         )
-        select_file_btn.bind(on_press=self.select_files)
+        select_file_btn.bind(on_press=self.add_test_file)
         file_btn_layout.add_widget(select_file_btn)
 
         select_folder_btn = Button(
-            text='[b]Select Folder[/b]',
+            text='[b]Add Test Folder[/b]',
             font_size='15sp',
             size_hint_x=0.5,
             background_color=(0.25, 0.55, 0.85, 1),
             markup=True
         )
-        select_folder_btn.bind(on_press=self.select_folder)
+        select_folder_btn.bind(on_press=self.add_test_folder)
         file_btn_layout.add_widget(select_folder_btn)
 
         layout.add_widget(file_btn_layout)
@@ -311,13 +311,13 @@ class ZbpYsApp(App):
 
         zip_btn_layout = BoxLayout(size_hint_y=None, height=dp(50))
         select_zip_btn = Button(
-            text='[b]Select ZIP File[/b]',
+            text='[b]Add Test ZIP[/b]',
             font_size='15sp',
             size_hint_x=1,
             background_color=(0.9, 0.5, 0.2, 1),
             markup=True
         )
-        select_zip_btn.bind(on_press=self.select_zip_file)
+        select_zip_btn.bind(on_press=self.add_test_zip)
         zip_btn_layout.add_widget(select_zip_btn)
         layout.add_widget(zip_btn_layout)
 
@@ -359,7 +359,12 @@ class ZbpYsApp(App):
 
         return layout
     
-    def switch_mode(self, mode):
+    def switch_mode(self, instance):
+        if instance == self.compress_btn:
+            mode = 'compress'
+        else:
+            mode = 'decompress'
+        
         self.current_mode = mode
         if mode == 'compress':
             self.compress_btn.state = 'down'
@@ -396,107 +401,60 @@ class ZbpYsApp(App):
         if not value:
             self.compress_pwd_input.text = ''
     
-    def select_files(self, instance):
+    def add_test_file(self, instance):
         try:
-            if HAS_PYJNIUS:
-                self.open_android_file_picker()
-            else:
-                try:
-                    from plyer import filechooser
-                    filechooser.open_file(on_selection=self.on_file_selected, multiple=True)
-                except Exception as e:
-                    Logger.error(f'ZBP: plyer filechooser error: {e}')
-                    self.show_popup('Info', 'Please enter file path manually')
-        except Exception as e:
-            Logger.error(f'ZBP: select_files error: {e}')
-            self.show_popup('Error', f'Select file failed: {str(e)}')
-    
-    def select_folder(self, instance):
-        try:
-            if HAS_PYJNIUS:
-                self.open_android_folder_picker()
-            else:
-                try:
-                    from plyer import filechooser
-                    filechooser.choose_dir(on_selection=self.on_folder_selected)
-                except Exception as e:
-                    Logger.error(f'ZBP: plyer folder chooser error: {e}')
-                    self.show_popup('Info', 'Please enter folder path manually')
-        except Exception as e:
-            Logger.error(f'ZBP: select_folder error: {e}')
-            self.show_popup('Error', f'Select folder failed: {str(e)}')
-    
-    def select_zip_file(self, instance):
-        try:
-            if HAS_PYJNIUS:
-                self.open_android_file_picker(is_zip=True)
-            else:
-                try:
-                    from plyer import filechooser
-                    filechooser.open_file(
-                        filters=[('ZIP files', '*.zip')],
-                        on_selection=self.on_zip_selected
-                    )
-                except Exception as e:
-                    Logger.error(f'ZBP: plyer zip chooser error: {e}')
-                    self.show_popup('Info', 'Please enter ZIP file path manually')
-        except Exception as e:
-            Logger.error(f'ZBP: select_zip_file error: {e}')
-            self.show_popup('Error', f'Select ZIP file failed: {str(e)}')
-    
-    def open_android_file_picker(self, is_zip=False):
-        if not HAS_PYJNIUS:
-            return
-        
-        try:
-            activity = PythonActivity.mActivity
-            intent = Intent(Intent.ACTION_GET_CONTENT)
-            intent.setType('*/*' if not is_zip else 'application/zip')
-            intent.addCategory(Intent.CATEGORY_OPENABLE)
-            intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, True)
+            test_file_path = os.path.join(self.base_path, 'test_file.txt')
+            if not os.path.exists(test_file_path):
+                with open(test_file_path, 'w', encoding='utf-8') as f:
+                    f.write('Test file for ZBP Compress Tool\n')
+                    f.write(f'Created: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}\n')
+                    f.write('This is a test file for compression.\n')
             
-            REQUEST_CODE = 1001 if not is_zip else 1002
-            activity.startActivityForResult(intent, REQUEST_CODE)
-            
-            self.show_popup('Info', 'Please select file in file manager')
+            if test_file_path not in self.selected_files:
+                self.selected_files.append(test_file_path)
+                self.update_file_list()
+                self.status_label.text = f'Added test file: {os.path.basename(test_file_path)}'
         except Exception as e:
-            Logger.error(f'ZBP: Android file picker error: {e}')
-            self.show_popup('Error', f'Cannot open file picker: {str(e)}')
+            Logger.error(f'ZBP: add_test_file error: {e}')
+            self.show_popup('Error', f'Failed to add test file: {str(e)}')
     
-    def open_android_folder_picker(self):
-        if not HAS_PYJNIUS:
-            return
-        
+    def add_test_folder(self, instance):
         try:
-            activity = PythonActivity.mActivity
-            intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
-            REQUEST_CODE = 1003
-            activity.startActivityForResult(intent, REQUEST_CODE)
+            test_folder_path = os.path.join(self.base_path, 'test_folder')
+            if not os.path.exists(test_folder_path):
+                os.makedirs(test_folder_path, exist_ok=True)
+                
+                for i in range(1, 4):
+                    sub_file = os.path.join(test_folder_path, f'file_{i}.txt')
+                    with open(sub_file, 'w', encoding='utf-8') as f:
+                        f.write(f'Test file {i}\n')
+                        f.write(f'Created: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}\n')
             
-            self.show_popup('Info', 'Please select folder in file manager')
+            folder_label = '[Folder] ' + test_folder_path
+            if folder_label not in self.selected_files:
+                self.selected_files.append(folder_label)
+                self.update_file_list()
+                self.status_label.text = f'Added test folder: test_folder'
         except Exception as e:
-            Logger.error(f'ZBP: Android folder picker error: {e}')
-            self.show_popup('Error', f'Cannot open folder picker: {str(e)}')
+            Logger.error(f'ZBP: add_test_folder error: {e}')
+            self.show_popup('Error', f'Failed to add test folder: {str(e)}')
     
-    def on_file_selected(self, selection):
-        if selection:
-            for f in selection:
-                if isinstance(f, str) and f not in self.selected_files:
-                    self.selected_files.append(f)
-            self.update_file_list()
-    
-    def on_folder_selected(self, selection):
-        if selection:
-            for f in selection:
-                if isinstance(f, str) and f not in self.selected_files:
-                    self.selected_files.append('[Folder] ' + f)
-            self.update_file_list()
-    
-    def on_zip_selected(self, selection):
-        if selection:
-            self.zip_path = selection[0] if isinstance(selection[0], str) else str(selection[0])
-            self.zip_path_label.text = os.path.basename(self.zip_path)
-            self.update_zip_info()
+    def add_test_zip(self, instance):
+        try:
+            test_zip_path = os.path.join(self.base_path, 'test_file.txt')
+            if os.path.exists(test_zip_path):
+                self.zip_path = test_zip_path
+                self.zip_path_label.text = os.path.basename(self.zip_path)
+                self.status_label.text = f'Selected: {os.path.basename(self.zip_path)}'
+                self.update_zip_info()
+            else:
+                self.add_test_file(None)
+                self.zip_path = os.path.join(self.base_path, 'test_file.txt')
+                self.zip_path_label.text = os.path.basename(self.zip_path)
+                self.status_label.text = f'Created and selected test file'
+        except Exception as e:
+            Logger.error(f'ZBP: add_test_zip error: {e}')
+            self.show_popup('Error', f'Failed to add test ZIP: {str(e)}')
     
     def update_file_list(self):
         count = len(self.selected_files)
@@ -514,12 +472,15 @@ class ZbpYsApp(App):
     def update_zip_info(self):
         try:
             if self.zip_path and os.path.exists(self.zip_path):
-                with zipfile.ZipFile(self.zip_path, 'r') as zf:
-                    file_count = len(zf.namelist())
-                    total_size = sum(info.file_size for info in zf.infolist())
-                    is_encrypted = any(info.flag_bits & 0x1 for info in zf.infolist())
-                    enc_text = ' [Encrypted]' if is_encrypted else ''
-                    self.zip_info_label.text = f'Files: {file_count} | Size: {self.format_size(total_size)}{enc_text}'
+                if self.zip_path.endswith('.zip'):
+                    with zipfile.ZipFile(self.zip_path, 'r') as zf:
+                        file_count = len(zf.namelist())
+                        total_size = sum(info.file_size for info in zf.infolist())
+                        is_encrypted = any(info.flag_bits & 0x1 for info in zf.infolist())
+                        enc_text = ' [Encrypted]' if is_encrypted else ''
+                        self.zip_info_label.text = f'Files: {file_count} | Size: {self.format_size(total_size)}{enc_text}'
+                else:
+                    self.zip_info_label.text = f'File selected (not a ZIP)'
         except Exception as e:
             Logger.error(f'ZBP: update_zip_info error: {e}')
             self.zip_info_label.text = 'Cannot read file info'
@@ -529,35 +490,49 @@ class ZbpYsApp(App):
         self.file_list_label.text = 'No files selected'
     
     def start_action(self, instance):
-        if self.is_processing:
-            self.show_popup('Info', 'Processing, please wait...')
-            return
-        
-        if self.current_mode == 'compress':
-            self.start_compress()
-        else:
-            self.start_decompress()
+        try:
+            if self.is_processing:
+                self.show_popup('Info', 'Processing, please wait...')
+                return
+            
+            self.status_label.text = 'Button clicked - starting...'
+            
+            if self.current_mode == 'compress':
+                self.start_compress()
+            else:
+                self.start_decompress()
+        except Exception as e:
+            Logger.error(f'ZBP: start_action error: {e}')
+            Logger.error(traceback.format_exc())
+            self.show_popup('Error', f'Action failed: {str(e)}')
     
     def start_compress(self):
-        if not self.selected_files:
-            self.show_popup('Warning', 'Please select files or folders first!')
-            return
-        
-        if self.use_password_cb.active:
-            pwd = self.compress_pwd_input.text
-            if not pwd:
-                self.show_popup('Warning', 'Please enter password!')
+        try:
+            if not self.selected_files:
+                self.show_popup('Warning', 'Please select files or folders first!')
                 return
-            if len(pwd) < 4:
-                self.show_popup('Warning', 'Password must be at least 4 characters!')
-                return
-        
-        self.is_processing = True
-        self.action_btn.disabled = True
-        
-        thread = threading.Thread(target=self.compress_thread)
-        thread.daemon = True
-        thread.start()
+            
+            if self.use_password_cb.active:
+                pwd = self.compress_pwd_input.text
+                if not pwd:
+                    self.show_popup('Warning', 'Please enter password!')
+                    return
+                if len(pwd) < 4:
+                    self.show_popup('Warning', 'Password must be at least 4 characters!')
+                    return
+            
+            self.is_processing = True
+            self.action_btn.disabled = True
+            
+            thread = threading.Thread(target=self.compress_thread)
+            thread.daemon = True
+            thread.start()
+        except Exception as e:
+            Logger.error(f'ZBP: start_compress error: {e}')
+            Logger.error(traceback.format_exc())
+            self.show_popup('Error', f'Compress start failed: {str(e)}')
+            self.is_processing = False
+            self.action_btn.disabled = False
     
     def compress_thread(self):
         try:
@@ -585,6 +560,7 @@ class ZbpYsApp(App):
             
             if total_files == 0:
                 Clock.schedule_once(lambda dt: self.show_popup('Warning', 'No files to compress!'))
+                Clock.schedule_once(lambda dt: self.end_processing())
                 return
             
             processed = 0
@@ -600,7 +576,7 @@ class ZbpYsApp(App):
                             processed += 1
                             progress = (processed / total_files) * 100
                             Clock.schedule_once(lambda dt, p=progress, f=arcname: self.update_progress(p, f'Compress: {f}'))
-                        else:
+                        elif os.path.isdir(clean_path):
                             folder_name = os.path.basename(clean_path)
                             for root, dirs, files in os.walk(clean_path):
                                 for file in files:
@@ -620,7 +596,7 @@ class ZbpYsApp(App):
                             processed += 1
                             progress = (processed / total_files) * 100
                             Clock.schedule_once(lambda dt, p=progress, f=arcname: self.update_progress(p, f'Compress: {f}'))
-                        else:
+                        elif os.path.isdir(clean_path):
                             folder_name = os.path.basename(clean_path)
                             for root, dirs, files in os.walk(clean_path):
                                 for file in files:
@@ -640,20 +616,26 @@ class ZbpYsApp(App):
             Logger.error(traceback.format_exc())
             Clock.schedule_once(lambda dt: self.show_popup('Error', f'Compress failed: {str(e)}'))
         finally:
-            self.is_processing = False
-            Clock.schedule_once(lambda dt: setattr(self.action_btn, 'disabled', False))
+            Clock.schedule_once(lambda dt: self.end_processing())
     
     def start_decompress(self):
-        if not self.zip_path:
-            self.show_popup('Warning', 'Please select ZIP file first!')
-            return
-        
-        self.is_processing = True
-        self.action_btn.disabled = True
-        
-        thread = threading.Thread(target=self.decompress_thread)
-        thread.daemon = True
-        thread.start()
+        try:
+            if not self.zip_path:
+                self.show_popup('Warning', 'Please select ZIP file first!')
+                return
+            
+            self.is_processing = True
+            self.action_btn.disabled = True
+            
+            thread = threading.Thread(target=self.decompress_thread)
+            thread.daemon = True
+            thread.start()
+        except Exception as e:
+            Logger.error(f'ZBP: start_decompress error: {e}')
+            Logger.error(traceback.format_exc())
+            self.show_popup('Error', f'Decompress start failed: {str(e)}')
+            self.is_processing = False
+            self.action_btn.disabled = False
     
     def decompress_thread(self):
         try:
@@ -665,6 +647,11 @@ class ZbpYsApp(App):
                 password = self.decompress_pwd_input.text.encode('utf-8')
             
             Clock.schedule_once(lambda dt: self.update_status('Reading ZIP file...'))
+            
+            if not self.zip_path.endswith('.zip'):
+                Clock.schedule_once(lambda dt: self.show_popup('Warning', 'Selected file is not a ZIP!'))
+                Clock.schedule_once(lambda dt: self.end_processing())
+                return
             
             if HAS_PYZIPPER:
                 with pyzipper.AESZipFile(self.zip_path, 'r') as zf:
@@ -706,8 +693,11 @@ class ZbpYsApp(App):
             Logger.error(traceback.format_exc())
             Clock.schedule_once(lambda dt: self.show_popup('Error', f'Extract failed: {str(e)}'))
         finally:
-            self.is_processing = False
-            Clock.schedule_once(lambda dt: setattr(self.action_btn, 'disabled', False))
+            Clock.schedule_once(lambda dt: self.end_processing())
+    
+    def end_processing(self):
+        self.is_processing = False
+        self.action_btn.disabled = False
     
     def update_status(self, message):
         self.status_label.text = message
@@ -718,24 +708,27 @@ class ZbpYsApp(App):
             self.status_label.text = message
     
     def show_popup(self, title, message):
-        content = BoxLayout(orientation='vertical', padding=dp(10), spacing=dp(10))
-        content.add_widget(Label(
-            text=message, 
-            font_size='14sp', 
-            color=(0.1, 0.1, 0.1, 1)
-        ))
-        close_btn = Button(
-            text='OK', 
-            size_hint_y=None, 
-            height=dp(50), 
-            font_size='16sp', 
-            background_color=(0.2, 0.6, 0.9, 1)
-        )
-        content.add_widget(close_btn)
-        
-        popup = Popup(title=title, content=content, size_hint=(0.8, 0.4))
-        close_btn.bind(on_press=popup.dismiss)
-        popup.open()
+        try:
+            content = BoxLayout(orientation='vertical', padding=dp(10), spacing=dp(10))
+            content.add_widget(Label(
+                text=message, 
+                font_size='14sp', 
+                color=(0.1, 0.1, 0.1, 1)
+            ))
+            close_btn = Button(
+                text='OK', 
+                size_hint_y=None, 
+                height=dp(50), 
+                font_size='16sp', 
+                background_color=(0.2, 0.6, 0.9, 1)
+            )
+            content.add_widget(close_btn)
+            
+            popup = Popup(title=title, content=content, size_hint=(0.8, 0.4))
+            close_btn.bind(on_press=popup.dismiss)
+            popup.open()
+        except Exception as e:
+            Logger.error(f'ZBP: show_popup error: {e}')
     
     def format_size(self, size):
         for unit in ['B', 'KB', 'MB', 'GB']:
@@ -747,7 +740,7 @@ class ZbpYsApp(App):
 
 if __name__ == '__main__':
     try:
-        Logger.info('ZBP: Application starting v5.7')
+        Logger.info('ZBP: Application starting v5.8')
         ZbpYsApp().run()
     except Exception as e:
         Logger.error(f'ZBP: Fatal error: {e}')
