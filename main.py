@@ -1,24 +1,21 @@
 # -*- coding: utf-8 -*-
 """
 ZBP Compress/Decompress Tool - Android Version
-Version 5.6 - Fix Chinese display and button toggle
+Version 5.7 - Complete Rewrite, Stable English Version
 """
 
 import os
 import sys
 import traceback
-
-from kivy.config import Config
-
-Config.set('graphics', 'width', '360')
-Config.set('graphics', 'height', '640')
-Config.set('kivy', 'keyboard_mode', 'systemanddock')
-
 import zipfile
 import threading
 from datetime import datetime
 
-from kivy.graphics import Color, RoundedRectangle
+from kivy.config import Config
+Config.set('graphics', 'width', '360')
+Config.set('graphics', 'height', '640')
+Config.set('kivy', 'keyboard_mode', 'systemanddock')
+
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.label import Label
@@ -31,7 +28,6 @@ from kivy.uix.progressbar import ProgressBar
 from kivy.clock import Clock
 from kivy.metrics import dp
 from kivy.logger import Logger
-from kivy.core.text import LabelBase, DEFAULT_FONT
 from kivy.core.window import Window
 
 HAS_PYZIPPER = False
@@ -70,104 +66,14 @@ if HAS_PYJNIUS:
         Logger.error(f'ZBP: Failed to load Android classes: {e}')
         HAS_PYJNIUS = False
 
-APP_FONT = None
-
-def find_system_font():
-    system_font_paths = [
-        '/system/fonts/NotoSansSC-Regular.otf',
-        '/system/fonts/NotoSansSC-Regular.ttf',
-        '/system/fonts/NotoSansCJK-Regular.otf',
-        '/system/fonts/NotoSansCJK-Regular.ttf',
-        '/system/fonts/NotoSansCJKsc-Regular.otf',
-        '/system/fonts/NotoSansCJKsc-Regular.ttf',
-        '/system/fonts/DroidSansFallback.ttf',
-        '/system/fonts/DroidSansFallbackFull.ttf',
-        '/system/fonts/DroidSans.ttf',
-        '/system/fonts/Roboto-Regular.ttf',
-        '/system/fonts/NotoSans-Regular.ttf',
-        '/system/fonts/HarmonyOS-Sans-Regular.ttf',
-        '/system/fonts/HarmonyOS_Sans_SC_Regular.ttf',
-        '/system/fonts/HmosFont-Regular.ttf',
-        '/system/fonts/SourceHanSansSC-Regular.otf',
-        '/system/fonts/SourceHanSansSC-Regular.ttf',
-        '/system/fonts/SourceHanSansCN-Regular.otf',
-        '/system/fonts/SourceHanSansCN-Regular.ttf',
-        '/system/fonts/GoogleSans-Regular.ttf',
-        '/system/fonts/GoogleSans-Regular.otf',
-        '/system/fonts/MiSans-Regular.ttf',
-        '/system/fonts/MiSans-Regular.otf',
-        '/system/fonts/OPPO-Sans-Regular.ttf',
-        '/system/fonts/OPPOSans-Regular.ttf',
-        '/system/fonts/VivoFont-Regular.ttf',
-        '/system/fonts/SamsungSans-Regular.ttf',
-        '/system/fonts/LGSmartGothic-Regular.ttf',
-        '/system/fonts/NotoSansCJK-Regular.ttc',
-        '/system/fonts/NotoSansCJKSC-Regular.ttf',
-        '/system/fonts/NotoSansCJKTC-Regular.ttf',
-        '/system/fonts/NotoSansCJKJP-Regular.ttf',
-        '/system/fonts/NotoSansCJKKR-Regular.ttf',
-        '/system/fonts/DroidSansChinese.ttf',
-        '/system/fonts/MTLmr3m.ttf',
-        '/system/fonts/MTLc3m.ttf',
-    ]
-    
-    for font_path in system_font_paths:
-        try:
-            if os.path.exists(font_path):
-                Logger.info(f'ZBP: Found system font: {font_path}')
-                return font_path
-        except Exception as e:
-            Logger.warning(f'ZBP: Error checking font {font_path}: {e}')
-    
-    return None
-
-def setup_font():
-    global APP_FONT
-    Logger.info('ZBP: Setting up font system...')
-    
-    try:
-        font_path = None
-        
-        if hasattr(sys, 'android') or HAS_ANDROID:
-            Logger.info('ZBP: Running on Android, checking system fonts...')
-            font_path = find_system_font()
-        
-        if font_path:
-            try:
-                Logger.info(f'ZBP: Registering font: {font_path}')
-                LabelBase.register(name='AppFont', fn_regular=font_path)
-                APP_FONT = 'AppFont'
-                Logger.info(f'ZBP: Font registered successfully: {font_path}')
-                return 'AppFont'
-            except Exception as e:
-                Logger.error(f'ZBP: Failed to register font: {e}')
-                Logger.error(traceback.format_exc())
-        
-        Logger.warning('ZBP: Using default font fallback')
-        APP_FONT = DEFAULT_FONT
-        return DEFAULT_FONT
-        
-    except Exception as e:
-        Logger.error(f'ZBP: Font setup error: {e}')
-        Logger.error(traceback.format_exc())
-        APP_FONT = DEFAULT_FONT
-        return DEFAULT_FONT
-
-def get_font():
-    global APP_FONT
-    if APP_FONT:
-        return APP_FONT
-    return 'Roboto'
 
 class ZbpYsApp(App):
     def build(self):
         try:
-            Logger.info('ZBP: Starting application build v5.6')
+            Logger.info('ZBP: Starting application build v5.7')
             self.title = "ZBP Tool"
             
             Window.clearcolor = (0.95, 0.95, 0.95, 1)
-            
-            setup_font()
             
             self.base_path = self.get_storage_path()
             Logger.info(f'ZBP: Storage path: {self.base_path}')
@@ -181,9 +87,6 @@ class ZbpYsApp(App):
             self.is_processing = False
             self.zip_path = None
             
-            font_name = get_font()
-            Logger.info(f'ZBP: Using font: {font_name}')
-            
             self.root_layout = BoxLayout(orientation='vertical', padding=dp(15), spacing=dp(8))
             
             title_label = Label(
@@ -192,8 +95,7 @@ class ZbpYsApp(App):
                 size_hint_y=None,
                 height=dp(50),
                 markup=True,
-                color=(0.1, 0.1, 0.1, 1),
-                font_name=font_name
+                color=(0.1, 0.1, 0.1, 1)
             )
             self.root_layout.add_widget(title_label)
             
@@ -202,45 +104,40 @@ class ZbpYsApp(App):
                 font_size='13sp',
                 size_hint_y=None,
                 height=dp(30),
-                color=(0.3, 0.3, 0.3, 1),
-                font_name=font_name
+                color=(0.3, 0.3, 0.3, 1)
             )
             self.root_layout.add_widget(subtitle_label)
             
             mode_layout = BoxLayout(size_hint_y=None, height=dp(60), spacing=dp(10), padding=dp(5))
 
             self.compress_btn = ToggleButton(
-                text='[b]📁 压缩模式[/b]',
+                text='[b]Compress[/b]',
                 group='mode',
                 state='down',
                 font_size='18sp',
                 background_color=(0.2, 0.6, 0.9, 1),
                 color=(1, 1, 1, 1),
-                font_name=font_name,
-                markup=True,
-                border=(4, 4, 4, 4)
+                markup=True
             )
-            self.compress_btn.bind(on_state=lambda instance, value: self.on_mode_toggle(instance, value))
+            self.compress_btn.bind(on_press=lambda x: self.switch_mode('compress'))
             mode_layout.add_widget(self.compress_btn)
 
             self.decompress_btn = ToggleButton(
-                text='[b]📂 解压模式[/b]',
+                text='[b]Decompress[/b]',
                 group='mode',
                 state='normal',
                 font_size='18sp',
                 background_color=(0.7, 0.7, 0.7, 1),
                 color=(0.3, 0.3, 0.3, 1),
-                font_name=font_name,
-                markup=True,
-                border=(4, 4, 4, 4)
+                markup=True
             )
-            self.decompress_btn.bind(on_state=lambda instance, value: self.on_mode_toggle(instance, value))
+            self.decompress_btn.bind(on_press=lambda x: self.switch_mode('decompress'))
             mode_layout.add_widget(self.decompress_btn)
 
             self.root_layout.add_widget(mode_layout)
 
-            self.compress_layout = self.create_compress_layout(font_name)
-            self.decompress_layout = self.create_decompress_layout(font_name)
+            self.compress_layout = self.create_compress_layout()
+            self.decompress_layout = self.create_decompress_layout()
             self.root_layout.add_widget(self.compress_layout)
             
             self.progress_bar = ProgressBar(
@@ -256,8 +153,7 @@ class ZbpYsApp(App):
                 size_hint_y=None,
                 height=dp(35),
                 halign='center',
-                color=(0.2, 0.2, 0.2, 1),
-                font_name=font_name
+                color=(0.2, 0.2, 0.2, 1)
             )
             self.status_label.bind(texture_size=self.status_label.setter('size'))
             self.root_layout.add_widget(self.status_label)
@@ -265,10 +161,9 @@ class ZbpYsApp(App):
             action_layout = BoxLayout(size_hint_y=None, height=dp(60), spacing=dp(10), padding=dp(5))
 
             self.action_btn = Button(
-                text='[b]🚀 开始压缩[/b]',
+                text='[b]Start Compress[/b]',
                 font_size='18sp',
                 background_color=(0.2, 0.7, 0.3, 1),
-                font_name=font_name,
                 markup=True
             )
             self.action_btn.bind(on_press=self.start_action)
@@ -325,283 +220,181 @@ class ZbpYsApp(App):
         except Exception as e:
             Logger.error(f'ZBP: Error requesting permissions: {e}')
     
-    def create_compress_layout(self, font_name):
+    def create_compress_layout(self):
         layout = BoxLayout(orientation='vertical', spacing=dp(8), padding=dp(10))
-
-        card_bg = BoxLayout(orientation='vertical', spacing=dp(5), padding=dp(10))
-        try:
-            card_bg.canvas.before.add(Color(0.95, 0.95, 0.98, 1))
-            card_bg.canvas.before.add(RoundedRectangle(pos=card_bg.pos, size=card_bg.size, radius=[dp(10), dp(10), dp(10), dp(10)]))
-        except:
-            pass
 
         file_btn_layout = BoxLayout(size_hint_y=None, height=dp(50), spacing=dp(8))
 
         select_file_btn = Button(
-            text='[b]📂 选择文件[/b]',
+            text='[b]Select Files[/b]',
             font_size='15sp',
             size_hint_x=0.5,
             background_color=(0.25, 0.55, 0.85, 1),
-            font_name=font_name,
             markup=True
         )
         select_file_btn.bind(on_press=self.select_files)
         file_btn_layout.add_widget(select_file_btn)
 
         select_folder_btn = Button(
-            text='[b]📁 选择文件夹[/b]',
+            text='[b]Select Folder[/b]',
             font_size='15sp',
             size_hint_x=0.5,
             background_color=(0.25, 0.55, 0.85, 1),
-            font_name=font_name,
             markup=True
         )
         select_folder_btn.bind(on_press=self.select_folder)
         file_btn_layout.add_widget(select_folder_btn)
 
-        card_bg.add_widget(file_btn_layout)
+        layout.add_widget(file_btn_layout)
 
         self.file_list_label = Label(
-            text='未选择任何文件',
+            text='No files selected',
             font_size='13sp',
             size_hint_y=1,
             halign='left',
             valign='top',
             text_size=(None, None),
-            color=(0.3, 0.3, 0.3, 1),
-            font_name=font_name
+            color=(0.3, 0.3, 0.3, 1)
         )
-        card_bg.add_widget(self.file_list_label)
+        layout.add_widget(self.file_list_label)
 
         clear_btn = Button(
-            text='[b]🗑️ 清除选择[/b]',
+            text='[b]Clear Selection[/b]',
             font_size='14sp',
             size_hint_y=None,
             height=dp(40),
             background_color=(0.85, 0.35, 0.35, 1),
-            font_name=font_name,
             markup=True
         )
         clear_btn.bind(on_press=self.clear_list)
-        card_bg.add_widget(clear_btn)
+        layout.add_widget(clear_btn)
 
-        layout.add_widget(card_bg)
-        
         name_layout = BoxLayout(size_hint_y=None, height=dp(45))
         name_layout.add_widget(Label(
-            text='ZIP名称:',
+            text='ZIP Name:',
             font_size='14sp',
             size_hint_x=0.3,
-            font_name=font_name,
             color=(0.2, 0.2, 0.2, 1)
         ))
         self.zip_name_input = TextInput(
             text=f'compressed_{datetime.now().strftime("%Y%m%d_%H%M%S")}',
             font_size='14sp',
-            size_hint_x=0.7,
-            font_name=font_name
+            size_hint_x=0.7
         )
         name_layout.add_widget(self.zip_name_input)
         layout.add_widget(name_layout)
 
-        pwd_card = BoxLayout(orientation='vertical', size_hint_y=None, height=dp(140), spacing=dp(5), padding=dp(5))
-        try:
-            pwd_card.canvas.before.add(Color(0.97, 0.97, 1.0, 1))
-            pwd_card.canvas.before.add(RoundedRectangle(pos=pwd_card.pos, size=pwd_card.size, radius=[dp(8), dp(8), dp(8), dp(8)]))
-        except:
-            pass
-
-        pwd_header = BoxLayout(size_hint_y=None, height=dp(35))
+        pwd_layout = BoxLayout(size_hint_y=None, height=dp(50))
         self.use_password_cb = CheckBox(size_hint_x=0.15, active=False)
         self.use_password_cb.bind(on_active=self.toggle_password)
-        pwd_header.add_widget(self.use_password_cb)
-        pwd_header.add_widget(Label(
-            text='[b]🔒 启用密码保护[/b]',
-            font_size='14sp',
-            size_hint_x=0.85,
-            font_name=font_name,
-            markup=True,
-            color=(0.2, 0.2, 0.2, 1)
-        ))
-        pwd_card.add_widget(pwd_header)
-
-        pwd_layout = BoxLayout(size_hint_y=None, height=dp(45))
+        pwd_layout.add_widget(self.use_password_cb)
         pwd_layout.add_widget(Label(
-            text='密码:',
-            font_size='13sp',
-            size_hint_x=0.25,
-            font_name=font_name,
+            text='[b]Password[/b]',
+            font_size='14sp',
+            size_hint_x=0.3,
+            markup=True,
             color=(0.2, 0.2, 0.2, 1)
         ))
         self.compress_pwd_input = TextInput(
             password=True,
             font_size='13sp',
-            size_hint_x=0.35,
-            disabled=True,
-            font_name=font_name
+            size_hint_x=0.55,
+            disabled=True
         )
         pwd_layout.add_widget(self.compress_pwd_input)
-        pwd_layout.add_widget(Label(
-            text='确认:',
-            font_size='13sp',
-            size_hint_x=0.15,
-            font_name=font_name,
-            color=(0.2, 0.2, 0.2, 1)
-        ))
-        self.compress_pwd_confirm = TextInput(
-            password=True,
-            font_size='13sp',
-            size_hint_x=0.25,
-            disabled=True,
-            font_name=font_name
-        )
-        pwd_layout.add_widget(self.compress_pwd_confirm)
-        pwd_card.add_widget(pwd_layout)
-
-        show_pwd_layout = BoxLayout(size_hint_y=None, height=dp(30))
-        self.show_pwd_cb = CheckBox(size_hint_x=0.15, active=False, disabled=True)
-        self.show_pwd_cb.bind(on_active=self.toggle_show_password)
-        show_pwd_layout.add_widget(self.show_pwd_cb)
-        show_pwd_layout.add_widget(Label(
-            text='显示密码',
-            font_size='12sp',
-            size_hint_x=0.85,
-            font_name=font_name,
-            color=(0.3, 0.3, 0.3, 1)
-        ))
-        pwd_card.add_widget(show_pwd_layout)
-
-        layout.add_widget(pwd_card)
+        layout.add_widget(pwd_layout)
 
         return layout
     
-    def create_decompress_layout(self, font_name):
+    def create_decompress_layout(self):
         layout = BoxLayout(orientation='vertical', spacing=dp(8), padding=dp(10))
-
-        card_bg = BoxLayout(orientation='vertical', spacing=dp(5), padding=dp(10))
-        try:
-            card_bg.canvas.before.add(Color(0.98, 0.95, 0.93, 1))
-            card_bg.canvas.before.add(RoundedRectangle(pos=card_bg.pos, size=card_bg.size, radius=[dp(10), dp(10), dp(10), dp(10)]))
-        except:
-            pass
 
         zip_btn_layout = BoxLayout(size_hint_y=None, height=dp(50))
         select_zip_btn = Button(
-            text='[b]📂 选择ZIP文件[/b]',
+            text='[b]Select ZIP File[/b]',
             font_size='15sp',
             size_hint_x=1,
             background_color=(0.9, 0.5, 0.2, 1),
-            font_name=font_name,
             markup=True
         )
         select_zip_btn.bind(on_press=self.select_zip_file)
         zip_btn_layout.add_widget(select_zip_btn)
-        card_bg.add_widget(zip_btn_layout)
+        layout.add_widget(zip_btn_layout)
 
         self.zip_path_label = Label(
-            text='未选择任何文件',
+            text='No file selected',
             font_size='13sp',
             size_hint_y=None,
             height=dp(40),
             halign='center',
-            color=(0.3, 0.3, 0.3, 1),
-            font_name=font_name
+            color=(0.3, 0.3, 0.3, 1)
         )
-        card_bg.add_widget(self.zip_path_label)
+        layout.add_widget(self.zip_path_label)
 
         self.zip_info_label = Label(
-            text='ZIP信息: --',
+            text='ZIP Info: --',
             font_size='12sp',
             size_hint_y=None,
             height=dp(50),
             halign='center',
-            color=(0.3, 0.3, 0.3, 1),
-            font_name=font_name
+            color=(0.3, 0.3, 0.3, 1)
         )
-        card_bg.add_widget(self.zip_info_label)
+        layout.add_widget(self.zip_info_label)
 
         pwd_layout = BoxLayout(size_hint_y=None, height=dp(50))
         pwd_layout.add_widget(Label(
-            text='密码:',
+            text='Password:',
             font_size='14sp',
             size_hint_x=0.25,
-            font_name=font_name,
             color=(0.2, 0.2, 0.2, 1)
         ))
         self.decompress_pwd_input = TextInput(
             password=True,
             font_size='14sp',
-            size_hint_x=0.5,
-            hint_text='(可选)',
-            font_name=font_name
+            size_hint_x=0.75,
+            hint_text='(optional)'
         )
         pwd_layout.add_widget(self.decompress_pwd_input)
-
-        self.show_decompress_pwd_cb = CheckBox(size_hint_x=0.1, active=False)
-        self.show_decompress_pwd_cb.bind(on_active=self.toggle_show_decompress_password)
-        pwd_layout.add_widget(self.show_decompress_pwd_cb)
-        pwd_layout.add_widget(Label(
-            text='显示',
-            font_size='12sp',
-            size_hint_x=0.15,
-            font_name=font_name,
-            color=(0.3, 0.3, 0.3, 1)
-        ))
-        card_bg.add_widget(pwd_layout)
-
-        layout.add_widget(card_bg)
+        layout.add_widget(pwd_layout)
 
         return layout
-    
-    def on_mode_toggle(self, instance, value):
-        if value == 'down':
-            if instance == self.compress_btn:
-                self.switch_mode('compress')
-            elif instance == self.decompress_btn:
-                self.switch_mode('decompress')
     
     def switch_mode(self, mode):
         self.current_mode = mode
         if mode == 'compress':
+            self.compress_btn.state = 'down'
             self.compress_btn.background_color = (0.2, 0.6, 0.9, 1)
             self.compress_btn.color = (1, 1, 1, 1)
+            self.decompress_btn.state = 'normal'
             self.decompress_btn.background_color = (0.7, 0.7, 0.7, 1)
             self.decompress_btn.color = (0.3, 0.3, 0.3, 1)
             if self.decompress_layout in self.root_layout.children:
                 self.root_layout.remove_widget(self.decompress_layout)
             if self.compress_layout not in self.root_layout.children:
                 self.root_layout.add_widget(self.compress_layout, index=len(self.root_layout.children) - 4)
-            self.action_btn.text = '[b]🚀 开始压缩[/b]'
+            self.action_btn.text = '[b]Start Compress[/b]'
             self.action_btn.background_color = (0.2, 0.7, 0.3, 1)
             self.status_label.text = 'Ready - Select files to compress'
         else:
+            self.decompress_btn.state = 'down'
             self.decompress_btn.background_color = (0.9, 0.5, 0.2, 1)
             self.decompress_btn.color = (1, 1, 1, 1)
+            self.compress_btn.state = 'normal'
             self.compress_btn.background_color = (0.7, 0.7, 0.7, 1)
             self.compress_btn.color = (0.3, 0.3, 0.3, 1)
             if self.compress_layout in self.root_layout.children:
                 self.root_layout.remove_widget(self.compress_layout)
             if self.decompress_layout not in self.root_layout.children:
                 self.root_layout.add_widget(self.decompress_layout, index=len(self.root_layout.children) - 4)
-            self.action_btn.text = '[b]🚀 开始解压[/b]'
+            self.action_btn.text = '[b]Start Decompress[/b]'
             self.action_btn.background_color = (0.9, 0.5, 0.2, 1)
             self.status_label.text = 'Ready - Select ZIP file to decompress'
         self.progress_bar.value = 0
     
     def toggle_password(self, instance, value):
         self.compress_pwd_input.disabled = not value
-        self.compress_pwd_confirm.disabled = not value
-        self.show_pwd_cb.disabled = not value
         if not value:
             self.compress_pwd_input.text = ''
-            self.compress_pwd_confirm.text = ''
-    
-    def toggle_show_password(self, instance, value):
-        self.compress_pwd_input.password = not value
-        self.compress_pwd_confirm.password = not value
-    
-    def toggle_show_decompress_password(self, instance, value):
-        self.decompress_pwd_input.password = not value
     
     def select_files(self, instance):
         try:
@@ -614,7 +407,6 @@ class ZbpYsApp(App):
                 except Exception as e:
                     Logger.error(f'ZBP: plyer filechooser error: {e}')
                     self.show_popup('Info', 'Please enter file path manually')
-                    self.show_path_input_dialog('file')
         except Exception as e:
             Logger.error(f'ZBP: select_files error: {e}')
             self.show_popup('Error', f'Select file failed: {str(e)}')
@@ -630,7 +422,6 @@ class ZbpYsApp(App):
                 except Exception as e:
                     Logger.error(f'ZBP: plyer folder chooser error: {e}')
                     self.show_popup('Info', 'Please enter folder path manually')
-                    self.show_path_input_dialog('folder')
         except Exception as e:
             Logger.error(f'ZBP: select_folder error: {e}')
             self.show_popup('Error', f'Select folder failed: {str(e)}')
@@ -649,7 +440,6 @@ class ZbpYsApp(App):
                 except Exception as e:
                     Logger.error(f'ZBP: plyer zip chooser error: {e}')
                     self.show_popup('Info', 'Please enter ZIP file path manually')
-                    self.show_path_input_dialog('zip')
         except Exception as e:
             Logger.error(f'ZBP: select_zip_file error: {e}')
             self.show_popup('Error', f'Select ZIP file failed: {str(e)}')
@@ -688,47 +478,6 @@ class ZbpYsApp(App):
             Logger.error(f'ZBP: Android folder picker error: {e}')
             self.show_popup('Error', f'Cannot open folder picker: {str(e)}')
     
-    def show_path_input_dialog(self, path_type):
-        font_name = get_font()
-        content = BoxLayout(orientation='vertical', padding=dp(10), spacing=dp(10))
-        
-        hint = 'Enter file full path' if path_type == 'file' else ('Enter ZIP file path' if path_type == 'zip' else 'Enter folder path')
-        path_input = TextInput(
-            hint_text=hint,
-            font_size='14sp',
-            size_hint_y=None,
-            height=dp(50)
-        )
-        content.add_widget(path_input)
-        
-        btn_layout = BoxLayout(size_hint_y=None, height=dp(50))
-        
-        cancel_btn = Button(text='Cancel', font_size='14sp', font_name=font_name)
-        btn_layout.add_widget(cancel_btn)
-        
-        confirm_btn = Button(text='OK', font_size='14sp', font_name=font_name)
-        btn_layout.add_widget(confirm_btn)
-        
-        content.add_widget(btn_layout)
-        
-        popup = Popup(title='Input Path', content=content, size_hint=(0.9, 0.4))
-        
-        cancel_btn.bind(on_press=popup.dismiss)
-        
-        def on_confirm(instance):
-            path = path_input.text.strip()
-            if path:
-                if path_type == 'zip':
-                    self.on_zip_selected([path])
-                elif path_type == 'file':
-                    self.on_file_selected([path])
-                else:
-                    self.on_folder_selected([path])
-            popup.dismiss()
-        
-        confirm_btn.bind(on_press=on_confirm)
-        popup.open()
-    
     def on_file_selected(self, selection):
         if selection:
             for f in selection:
@@ -752,15 +501,15 @@ class ZbpYsApp(App):
     def update_file_list(self):
         count = len(self.selected_files)
         if count == 0:
-            self.file_list_label.text = '未选择任何文件'
+            self.file_list_label.text = 'No files selected'
             return
         lines = []
         for f in self.selected_files:
             clean_path = f.replace('[Folder] ', '')
             lines.append(clean_path)
-        self.file_list_label.text = f'已选择 {count} 个文件/文件夹:\n\n' + '\n'.join(lines)
+        self.file_list_label.text = f'Selected {count} files/folders:\n\n' + '\n'.join(lines)
         if count > 10:
-            self.file_list_label.text += f'\n\n... 还有 {count - 10} 个文件'
+            self.file_list_label.text += f'\n\n... and {count - 10} more'
 
     def update_zip_info(self):
         try:
@@ -769,15 +518,15 @@ class ZbpYsApp(App):
                     file_count = len(zf.namelist())
                     total_size = sum(info.file_size for info in zf.infolist())
                     is_encrypted = any(info.flag_bits & 0x1 for info in zf.infolist())
-                    enc_text = ' [已加密]' if is_encrypted else ''
-                    self.zip_info_label.text = f'文件数: {file_count} | 大小: {self.format_size(total_size)}{enc_text}'
+                    enc_text = ' [Encrypted]' if is_encrypted else ''
+                    self.zip_info_label.text = f'Files: {file_count} | Size: {self.format_size(total_size)}{enc_text}'
         except Exception as e:
             Logger.error(f'ZBP: update_zip_info error: {e}')
-            self.zip_info_label.text = '无法读取文件信息'
+            self.zip_info_label.text = 'Cannot read file info'
 
     def clear_list(self, instance):
         self.selected_files.clear()
-        self.file_list_label.text = '未选择任何文件'
+        self.file_list_label.text = 'No files selected'
     
     def start_action(self, instance):
         if self.is_processing:
@@ -796,12 +545,8 @@ class ZbpYsApp(App):
         
         if self.use_password_cb.active:
             pwd = self.compress_pwd_input.text
-            pwd_confirm = self.compress_pwd_confirm.text
             if not pwd:
                 self.show_popup('Warning', 'Please enter password!')
-                return
-            if pwd != pwd_confirm:
-                self.show_popup('Error', 'Passwords do not match!')
                 return
             if len(pwd) < 4:
                 self.show_popup('Warning', 'Password must be at least 4 characters!')
@@ -973,12 +718,10 @@ class ZbpYsApp(App):
             self.status_label.text = message
     
     def show_popup(self, title, message):
-        font_name = get_font()
         content = BoxLayout(orientation='vertical', padding=dp(10), spacing=dp(10))
         content.add_widget(Label(
             text=message, 
             font_size='14sp', 
-            font_name=font_name,
             color=(0.1, 0.1, 0.1, 1)
         ))
         close_btn = Button(
@@ -986,7 +729,6 @@ class ZbpYsApp(App):
             size_hint_y=None, 
             height=dp(50), 
             font_size='16sp', 
-            font_name=font_name,
             background_color=(0.2, 0.6, 0.9, 1)
         )
         content.add_widget(close_btn)
@@ -1005,7 +747,7 @@ class ZbpYsApp(App):
 
 if __name__ == '__main__':
     try:
-        Logger.info('ZBP: Application starting v5.6')
+        Logger.info('ZBP: Application starting v5.7')
         ZbpYsApp().run()
     except Exception as e:
         Logger.error(f'ZBP: Fatal error: {e}')
