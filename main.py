@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 ZBP Compress/Decompress Tool - Android Version
-Version 5.0 - Robust error handling and font fallback
+Version 5.6 - Fix Chinese display and button toggle
 """
 
 import os
@@ -96,6 +96,19 @@ def find_system_font():
         '/system/fonts/GoogleSans-Regular.otf',
         '/system/fonts/MiSans-Regular.ttf',
         '/system/fonts/MiSans-Regular.otf',
+        '/system/fonts/OPPO-Sans-Regular.ttf',
+        '/system/fonts/OPPOSans-Regular.ttf',
+        '/system/fonts/VivoFont-Regular.ttf',
+        '/system/fonts/SamsungSans-Regular.ttf',
+        '/system/fonts/LGSmartGothic-Regular.ttf',
+        '/system/fonts/NotoSansCJK-Regular.ttc',
+        '/system/fonts/NotoSansCJKSC-Regular.ttf',
+        '/system/fonts/NotoSansCJKTC-Regular.ttf',
+        '/system/fonts/NotoSansCJKJP-Regular.ttf',
+        '/system/fonts/NotoSansCJKKR-Regular.ttf',
+        '/system/fonts/DroidSansChinese.ttf',
+        '/system/fonts/MTLmr3m.ttf',
+        '/system/fonts/MTLc3m.ttf',
     ]
     
     for font_path in system_font_paths:
@@ -123,7 +136,6 @@ def setup_font():
             try:
                 Logger.info(f'ZBP: Registering font: {font_path}')
                 LabelBase.register(name='AppFont', fn_regular=font_path)
-                Config.set('kivy', 'default_font', 'AppFont')
                 APP_FONT = 'AppFont'
                 Logger.info(f'ZBP: Font registered successfully: {font_path}')
                 return 'AppFont'
@@ -150,7 +162,7 @@ def get_font():
 class ZbpYsApp(App):
     def build(self):
         try:
-            Logger.info('ZBP: Starting application build v5.0')
+            Logger.info('ZBP: Starting application build v5.6')
             self.title = "ZBP Tool"
             
             Window.clearcolor = (0.95, 0.95, 0.95, 1)
@@ -208,7 +220,7 @@ class ZbpYsApp(App):
                 markup=True,
                 border=(4, 4, 4, 4)
             )
-            self.compress_btn.bind(on_press=lambda x: self.switch_mode('compress'))
+            self.compress_btn.bind(on_state=lambda instance, value: self.on_mode_toggle(instance, value))
             mode_layout.add_widget(self.compress_btn)
 
             self.decompress_btn = ToggleButton(
@@ -216,13 +228,13 @@ class ZbpYsApp(App):
                 group='mode',
                 state='normal',
                 font_size='18sp',
-                background_color=(0.9, 0.5, 0.2, 0.3),
+                background_color=(0.7, 0.7, 0.7, 1),
                 color=(0.3, 0.3, 0.3, 1),
                 font_name=font_name,
                 markup=True,
                 border=(4, 4, 4, 4)
             )
-            self.decompress_btn.bind(on_press=lambda x: self.switch_mode('decompress'))
+            self.decompress_btn.bind(on_state=lambda instance, value: self.on_mode_toggle(instance, value))
             mode_layout.add_widget(self.decompress_btn)
 
             self.root_layout.add_widget(mode_layout)
@@ -386,7 +398,8 @@ class ZbpYsApp(App):
         self.zip_name_input = TextInput(
             text=f'compressed_{datetime.now().strftime("%Y%m%d_%H%M%S")}',
             font_size='14sp',
-            size_hint_x=0.7
+            size_hint_x=0.7,
+            font_name=font_name
         )
         name_layout.add_widget(self.zip_name_input)
         layout.add_widget(name_layout)
@@ -424,7 +437,8 @@ class ZbpYsApp(App):
             password=True,
             font_size='13sp',
             size_hint_x=0.35,
-            disabled=True
+            disabled=True,
+            font_name=font_name
         )
         pwd_layout.add_widget(self.compress_pwd_input)
         pwd_layout.add_widget(Label(
@@ -438,7 +452,8 @@ class ZbpYsApp(App):
             password=True,
             font_size='13sp',
             size_hint_x=0.25,
-            disabled=True
+            disabled=True,
+            font_name=font_name
         )
         pwd_layout.add_widget(self.compress_pwd_confirm)
         pwd_card.add_widget(pwd_layout)
@@ -517,7 +532,8 @@ class ZbpYsApp(App):
             password=True,
             font_size='14sp',
             size_hint_x=0.5,
-            hint_text='(可选)'
+            hint_text='(可选)',
+            font_name=font_name
         )
         pwd_layout.add_widget(self.decompress_pwd_input)
 
@@ -537,13 +553,20 @@ class ZbpYsApp(App):
 
         return layout
     
+    def on_mode_toggle(self, instance, value):
+        if value == 'down':
+            if instance == self.compress_btn:
+                self.switch_mode('compress')
+            elif instance == self.decompress_btn:
+                self.switch_mode('decompress')
+    
     def switch_mode(self, mode):
         self.current_mode = mode
         if mode == 'compress':
-            self.compress_btn.state = 'down'
             self.compress_btn.background_color = (0.2, 0.6, 0.9, 1)
-            self.decompress_btn.state = 'normal'
+            self.compress_btn.color = (1, 1, 1, 1)
             self.decompress_btn.background_color = (0.7, 0.7, 0.7, 1)
+            self.decompress_btn.color = (0.3, 0.3, 0.3, 1)
             if self.decompress_layout in self.root_layout.children:
                 self.root_layout.remove_widget(self.decompress_layout)
             if self.compress_layout not in self.root_layout.children:
@@ -552,10 +575,10 @@ class ZbpYsApp(App):
             self.action_btn.background_color = (0.2, 0.7, 0.3, 1)
             self.status_label.text = 'Ready - Select files to compress'
         else:
-            self.decompress_btn.state = 'down'
             self.decompress_btn.background_color = (0.9, 0.5, 0.2, 1)
-            self.compress_btn.state = 'normal'
+            self.decompress_btn.color = (1, 1, 1, 1)
             self.compress_btn.background_color = (0.7, 0.7, 0.7, 1)
+            self.compress_btn.color = (0.3, 0.3, 0.3, 1)
             if self.compress_layout in self.root_layout.children:
                 self.root_layout.remove_widget(self.compress_layout)
             if self.decompress_layout not in self.root_layout.children:
@@ -982,7 +1005,7 @@ class ZbpYsApp(App):
 
 if __name__ == '__main__':
     try:
-        Logger.info('ZBP: Application starting v5.0')
+        Logger.info('ZBP: Application starting v5.6')
         ZbpYsApp().run()
     except Exception as e:
         Logger.error(f'ZBP: Fatal error: {e}')
